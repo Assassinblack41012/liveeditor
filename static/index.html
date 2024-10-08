@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Video Editor</title>
+  <style>
+    /* [Your existing styles here] */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #videoContainer {
+      position: relative;
+      width: 640px;
+      margin: 20px auto;
+    }
+    #video {
+      width: 100%;
+      border: 1px solid #ccc;
+    }
+    #controls {
+      text-align: center;
+      margin-top: 10px;
+    }
+    #progressBar {
+      width: 100%;
+      margin: 10px 0;
+    }
+    #message {
+      color: green;
+      margin-top: 10px;
+    }
+    #urlInput {
+      width: 80%;
+      padding: 8px;
+      margin: 10px 0;
+    }
+    #startRecordingBtn {
+      padding: 8px 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 style="text-align: center;">Live Video Editor</h1>
+
+  <div id="controls">
+    <input type="text" id="urlInput" placeholder="Enter Live Stream URL" />
+    <button id="startRecordingBtn">Start Recording</button>
+  </div>
+
+  <div id="videoContainer">
+    <video id="video" controls autoplay></video>
+    <input type="range" id="progressBar" min="0" max="100" value="0">
+  </div>
+
+  <div id="controls">
+    <button id="setStart">Set Start Point</button>
+    <button id="setEnd">Set End Point</button>
+    <button id="sendTimestamps">Cut Scene</button>
+    <div id="timeDisplay">
+      Start Time: <span id="startTimeDisplay">N/A</span>,
+      End Time: <span id="endTimeDisplay">N/A</span>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <!-- Include hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <script>
+    // Variables
+    const video = document.getElementById('video');
+    const progressBar = document.getElementById('progressBar');
+    let startTime = null;
+    let endTime = null;
+    let duration = 0;
+    let videoSrc = ''; // Will be set by the user
+    let isRecording = false;
+
+    // Function to start the stream and recording
+    document.getElementById('startRecordingBtn').addEventListener('click', function () {
+      videoSrc = document.getElementById('urlInput').value.trim();
+      if (!videoSrc) {
+        alert('Please enter a valid live stream URL.');
+        return;
+      }
+
+      // Send the URL to the backend to start recording
+      fetch('/api/start_recording', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ stream_url: videoSrc })
+      })
+      .then(response => response.json())
+      .then(result => {
+        document.getElementById('message').innerText = result.message;
+
+        // Start playing the stream in the video player
+        startPlayingStream(videoSrc);
+        isRecording = true;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('message').innerText = 'An error occurred while starting the stream.';
+      });
+    });
+
+    function startPlayingStream(streamUrl) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+          video.play();
+        });
+        hls.on(Hls.Events.LEVEL_LOADED, function(event, data) {
+          duration = data.details.totalduration;
+          progressBar.max = duration;
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+        video.addEventListener('loadedmetadata', function () {
+          video.play();
+        });
+      } else {
+        alert('Your browser does not support HLS playback.');
+      }
+
+      // Update progress bar as video plays
+      video.addEventListener('timeupdate', function () {
+        if (!duration) {
+          duration = video.duration;
+          progressBar.max = duration;
+        }
+        progressBar.value = video.currentTime;
+      });
+    }
+
+    // Seek video when progress bar changes
+    progressBar.addEventListener('input', function () {
+      video.currentTime = progressBar.value;
+    });
+
+    // Set Start Point
+    document.getElementById('setStart').addEventListener('click', function () {
+      startTime = video.currentTime;
+      document.getElementById('startTimeDisplay').innerText = startTime.toFixed(2) + 's';
+    });
+
+    // Set End Point
+    document.getElementById('setEnd').addEventListener('click', function () {
+      endTime = video.currentTime;
+      document.getElementById('endTimeDisplay').innerText = endTime.toFixed(2) + 's';
+    });
+
+    // Send Timestamps to Backend
+    document.getElementById('sendTimestamps').addEventListener('click', function () {
+      if (startTime === null || endTime === null || startTime >= endTime) {
+        alert('Please set valid start and end points.');
+        return;
+      }
+
+      // Clear previous messages
+      document.getElementById('message').innerText = '';  // <--- Added line
+
+      // Prepare data
+      const data = {
+        startTime: startTime,
+        endTime: endTime
+      };
+
+      // Send data to backend
+      fetch('/api/render', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        document.getElementById('message').innerText = result.message;
+        if (result.output_url) {
+          // Provide a link to download or view the processed video
+          const link = document.createElement('a');
+          link.href = result.output_url;
+          link.innerText = 'Download Processed Video';
+          link.style.display = 'block';
+          document.getElementById('message').appendChild(link);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('message').innerText = 'An error occurred while processing your request.';
+      });
+    });
+
+    // Function to stop recording when the page is closed
+    function stopRecording() {
+      if (isRecording) {
+        // Use navigator.sendBeacon to send a POST request
+        const url = '/api/stop_recording';
+        const data = new Blob([], { type: 'application/json' });
+        navigator.sendBeacon(url, data);
+      }
+    }
+
+    // Add event listener for page unload
+    window.addEventListener('beforeunload', stopRecording);
+  </script>
+
+</body>
+</html>
