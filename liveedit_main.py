@@ -120,4 +120,4 @@ def run_ffmpeg(input_video, output_video, start_time, end_time):
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=48080)
