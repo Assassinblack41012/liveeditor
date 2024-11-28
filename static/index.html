@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Live Video Editor</title>
@@ -8,37 +9,45 @@
     body {
       font-family: Arial, sans-serif;
     }
+
     #videoContainer {
       position: relative;
       width: 640px;
       margin: 20px auto;
     }
+
     #video {
       width: 100%;
       border: 1px solid #ccc;
     }
+
     #controls {
       text-align: center;
       margin-top: 10px;
     }
+
     #progressBar {
       width: 100%;
       margin: 10px 0;
     }
+
     #message {
       color: green;
       margin-top: 10px;
     }
+
     #urlInput {
       width: 80%;
       padding: 8px;
       margin: 10px 0;
     }
+
     #startRecordingBtn {
       padding: 8px 16px;
     }
   </style>
 </head>
+
 <body>
 
   <h1 style="text-align: center;">Live Video Editor</h1>
@@ -93,18 +102,18 @@
         },
         body: JSON.stringify({ stream_url: videoSrc })
       })
-      .then(response => response.json())
-      .then(result => {
-        document.getElementById('message').innerText = result.message;
+        .then(response => response.json())
+        .then(result => {
+          document.getElementById('message').innerText = result.message;
 
-        // Start playing the stream in the video player
-        startPlayingStream(videoSrc);
-        isRecording = true;
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('message').innerText = 'An error occurred while starting the stream.';
-      });
+          // Start playing the stream in the video player
+          startPlayingStream(videoSrc);
+          isRecording = true;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('message').innerText = 'An error occurred while starting the stream.';
+        });
     });
 
     function startPlayingStream(streamUrl) {
@@ -115,7 +124,7 @@
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
           video.play();
         });
-        hls.on(Hls.Events.LEVEL_LOADED, function(event, data) {
+        hls.on(Hls.Events.LEVEL_LOADED, function (event, data) {
           duration = data.details.totalduration;
           progressBar.max = duration;
         });
@@ -179,22 +188,22 @@
         },
         body: JSON.stringify(data)
       })
-      .then(response => response.json())
-      .then(result => {
-        document.getElementById('message').innerText = result.message;
-        if (result.output_url) {
-          // Provide a link to download or view the processed video
-          const link = document.createElement('a');
-          link.href = result.output_url;
-          link.innerText = 'Download Processed Video';
-          link.style.display = 'block';
-          document.getElementById('message').appendChild(link);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('message').innerText = 'An error occurred while processing your request.';
-      });
+        .then(response => response.json())
+        .then(result => {
+          document.getElementById('message').innerText = result.message;
+          if (result.output_url) {
+            // Provide a link to download or view the processed video
+            const link = document.createElement('a');
+            link.href = result.output_url;
+            link.innerText = 'Download Processed Video';
+            link.style.display = 'block';
+            document.getElementById('message').appendChild(link);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('message').innerText = 'An error occurred while processing your request.';
+        });
     });
 
     // Function to stop recording when the page is closed
@@ -212,4 +221,5 @@
   </script>
 
 </body>
+
 </html>
