@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { formatTimeCode } from '../../utils/time';
 import { TimelineMarker } from './TimelineMarker';
 
 export const Timeline = ({
@@ -7,7 +6,6 @@ export const Timeline = ({
   currentTime,
   markers,
   onSeek,
-  onMarkerAdd,
   onMarkerUpdate,
 }) => {
   const timelineRef = useRef(null);
@@ -52,7 +50,7 @@ export const Timeline = ({
   return (
     <div className="w-full bg-gray-900 p-2 rounded-lg">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-white">{formatTimeCode(currentTime)}</span>
+        {/* <span className="text-white">{formatTimeCode(currentTime)}</span> */}
         <div className="flex items-center gap-2">
           <span className="text-gray-400 text-sm">Zoom:</span>
           <input

@@ -1,12 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
-import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { formatTimeCode } from '../../utils/time';
-import { ProgressBar } from './ProgressBar';
-import { VolumeControl } from './VolumeControl';
+import React, { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
+import {
+  Play,
+  Pause,
+  StepForward,
+  StepBack,
+  FastForward,
+  Rewind,
+} from "lucide-react";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { formatTimeCode } from "../../utils/time";
+import { ProgressBar } from "./ProgressBar";
+import { VolumeControl } from "./VolumeControl";
 
-export const VideoPlayer = ({ source, onTimeUpdate }) => {
+export const VideoPlayer = ({
+  source,
+  onTimeUpdate,
+  onDuration,
+  movedTime,
+}) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -15,7 +27,7 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
   const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
-    if (source.type === 'hls' && videoRef.current) {
+    if (source.type === "hls" && videoRef.current) {
       if (Hls.isSupported()) {
         const hls = new Hls();
         hls.loadSource(source.url);
@@ -24,14 +36,24 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
     }
   }, [source]);
 
-  const handlePlayPause = () => {
+  useEffect(() => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+      videoRef.current.currentTime = movedTime;
+    }
+  }, [movedTime]);
+
+  const handlePlayPause = () => {
+    if (source?.url) {
+      if (videoRef.current) {
+        if (isPlaying) {
+          videoRef.current.pause();
+        } else {
+          videoRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
       }
-      setIsPlaying(!isPlaying);
+    } else {
+      return;
     }
   };
 
@@ -47,10 +69,14 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      if (onDuration) {
+        onDuration(videoRef.current.duration);
+      }
     }
   };
 
   const skipFrames = (frames) => {
+    console.log(videoRef.current.currentTime);
     if (videoRef.current) {
       const frameTime = 1 / 30;
       videoRef.current.currentTime += frameTime * frames;
@@ -89,17 +115,14 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
 
   return (
     <div className="relative w-full bg-gray-900 rounded-lg">
-
       <video
         ref={videoRef}
         className="w-full aspect-video"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
       />
-      <div className='absolute w-full bottom-[76px] left-0 right-0'>
-        <div className='h-4 w-full flex items-end bg-transparent'>
-
-
+      <div className="absolute w-full bottom-[76px] left-0 right-0">
+        <div className="h-4 w-full flex items-end bg-transparent">
           <ProgressBar
             currentTime={currentTime}
             duration={duration}
@@ -109,18 +132,37 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
       </div>
       <div className="w-full p-2">
         <div className="flex items-center justify-between text-gray-400 text-sm h-5 px-2">
-          <span>{formatTimeCode(currentTime) ? formatTimeCode(currentTime) : ' '}</span>
-          <span>{formatTimeCode(duration)}</span>
+          <span>
+            {formatTimeCode(currentTime)
+              ? `${formatTimeCode(currentTime).hours}:${
+                  formatTimeCode(currentTime).minutes
+                }:${formatTimeCode(currentTime).seconds}:${
+                  formatTimeCode(currentTime).milliseconds
+                }`
+              : " "}
+          </span>
+          <span>{`${formatTimeCode(duration).hours}:${
+            formatTimeCode(duration).minutes
+          }:${formatTimeCode(duration).seconds}:${
+            formatTimeCode(duration).milliseconds
+          }`}</span>
         </div>
         <div className="w-full grid grid-cols-12 flex items-center justify-between">
-          <div className='col-span-4' />
+          <div className="col-span-4" />
           <div className="col-span-4 flex items-center justify-center gap-4">
             <button
-              onClick={() => skipFrames(-1)}
+              onClick={() => skipFrames(-50)}
               className="p-2 hover:bg-gray-700 rounded-full"
               title="Previous Frame (←)"
             >
-              <SkipBack className="w-6 h-6 text-white" />
+              <Rewind className="w-6 h-6 text-white" />
+            </button>
+            <button
+              onClick={() => skipFrames(-10)}
+              className="p-2 hover:bg-gray-700 rounded-full"
+              title="Previous Frame (←)"
+            >
+              <StepBack className="w-6 h-6 text-white" />
             </button>
             <button
               onClick={handlePlayPause}
@@ -134,14 +176,21 @@ export const VideoPlayer = ({ source, onTimeUpdate }) => {
               )}
             </button>
             <button
-              onClick={() => skipFrames(1)}
+              onClick={() => skipFrames(10)}
               className="p-2 hover:bg-gray-700 rounded-full"
               title="Next Frame (→)"
             >
-              <SkipForward className="w-6 h-6 text-white" />
+              <StepForward className="w-6 h-6 text-white" />
+            </button>
+            <button
+              onClick={() => skipFrames(50)}
+              className="p-2 hover:bg-gray-700 rounded-full"
+              title="Next Frame (→)"
+            >
+              <FastForward className="w-6 h-6 text-white" />
             </button>
           </div>
-          <div className='col-span-4 flex justify-end'>
+          <div className="col-span-4 flex justify-end">
             <VolumeControl
               volume={volume}
               isMuted={isMuted}

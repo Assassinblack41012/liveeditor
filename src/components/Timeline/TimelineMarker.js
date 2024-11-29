@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { formatTimeCode } from '../../utils/time';
 
 export const TimelineMarker = ({ marker, visibleStart, visibleEnd, onMarkerDrag }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -46,7 +45,7 @@ export const TimelineMarker = ({ marker, visibleStart, visibleEnd, onMarkerDrag 
       onMouseDown={handleMouseDown}
     >
       <div className="absolute top-full mt-1 text-xs text-white whitespace-nowrap">
-        {marker.label} ({formatTimeCode(marker.time)})
+        {/* {marker.label} ({formatTimeCode(marker.time)}) */}
       </div>
     </div>
   );
