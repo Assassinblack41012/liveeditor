@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import subprocess
 import uvicorn
@@ -6,11 +6,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 import threading
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
 # Mount StaticFiles at '/static'
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React development server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Serve the index.html at the root path
 @app.get("/")
@@ -29,6 +37,12 @@ class StreamURL(BaseModel):
 class RenderRequest(BaseModel):
     startTime: float
     endTime: float
+    
+class VideoRequest(BaseModel):
+    video_url: str  # URL of the input video
+    start_time: int  # Start time in seconds
+    end_time: int    # End time in seconds
+    zoom: int          # Video filter (e.g., "fps=1")
 
 @app.post("/api/start_recording")
 async def start_recording(stream: StreamURL):
@@ -80,6 +94,53 @@ async def stop_recording():
                 os.remove(recording_file)
             return {"message": "No active recording to stop. Recording file deleted if it existed."}
 
+@app.post("/extract_frames/")
+def extract_frames(request: VideoRequest):
+    global recording_process, current_stream_url 
+    with recording_lock:
+        # If a recording is already in progress, terminate it
+        if recording_process and recording_process.poll() is None:
+            recording_process.terminate()
+            recording_process = None
+            if os.path.exists(output_pattern):
+                os.remove(output_pattern)
+        # File and folder setup
+        output_folder = "frames_output"
+        os.makedirs(output_folder, exist_ok=True)
+        output_pattern = os.path.join(output_folder, "frame-%03d.png")
+        current_stream_url = request.video_url
+
+    # Download the video
+    # download_command = ["curl", "-L", request.video_url, "-o", input_file]
+    # try:
+    #     subprocess.run(download_command, check=True)
+    # except subprocess.CalledProcessError:
+    #     raise HTTPException(status_code=400, detail="Failed to download the video.")
+
+    # Run FFmpeg to extract frames
+        ffmpeg_command = [
+            "ffmpeg", 
+            # "-y", 
+            '-n',
+            "-i", current_stream_url,  # Input file
+            # '-f', 'mpegts',
+            '-s', '90x40',
+            "-ss", str(request.start_time),  # Start time
+            # "-to", str(request.end_time),    # End time
+            # '-ss', '00:00:05',vframe
+            '-vframes', '1',
+            # "-vf", str(25*(request.end_time-request.start_time)/(10*request.zoom)),               # Video filter
+            # "-r", "1",       
+            output_pattern                   # Output file pattern
+        ]
+        try:
+            subprocess.Popen(ffmpeg_command)
+        except subprocess.CalledProcessError:
+            raise HTTPException(status_code=500, detail="FFmpeg failed to process the video.")
+
+
+        return {"message": "Frames extracted successfully!", "output_folder": output_folder}
+
 @app.post("/api/render")
 async def render_video(request: RenderRequest, background_tasks: BackgroundTasks):
     global recording_file
@@ -120,5 +181,5 @@ def run_ffmpeg(input_video, output_video, start_time, end_time):
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=48080)
+    uvicorn.run(app, host="127.0.0.1", port=48080)
     

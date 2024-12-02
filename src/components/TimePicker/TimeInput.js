@@ -1,47 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { timeToMilliseconds } from "./utils";
+import { timeToSeconds } from "./utils";
 
-export function TimeInput({
-  value,
-  min,
-  max,
-  setPickerValue,
-  label,
-  onChange,
-}) {
+export function TimeInput({ value, min, max, label, onChange }) {
   const increment = () => {
-    onChange(
-      timeToMilliseconds({
-        ...value,
-        [label]: value[label] >= max ? min : parseInt(value[label], 10) + 1,
-      }) / 1000
-    );
+    const newValue = value >= max ? min : parseInt(value + 1);
+    onChange(newValue);
   };
 
   const decrement = () => {
-    onChange(
-      timeToMilliseconds({
-        ...value,
-        [label]: value[label] >= max ? min : parseInt(value[label], 10) - 1,
-      }) / 1000
-    );
+    const newValue = value <= min ? max : parseInt(value - 1);
+    onChange(newValue);
   };
 
   const handleInputChange = (e) => {
-    if (
-      parseInt(e.target.value, 10) < min ||
-      parseInt(e.target.value, 10) > max
-    ) {
-      if (e.target.value.length > 0)
-        setPickerValue({ ...value, [label]: parseInt(e.target.value, 10) });
-      return;
-    }
-    if (isNaN(parseInt(e.target.value, 10))) return;
-    onChange(
-      timeToMilliseconds({ ...value, [label]: parseInt(e.target.value, 10) }) /
-        1000
-    );
+    if (e.target.value === "") return onChange(0);
+    const newValue = parseInt(e.target.value, 10);
+    if (isNaN(newValue)) return;
+    onChange(newValue);
   };
 
   return (
@@ -57,8 +33,8 @@ export function TimeInput({
       <div className="flex flex-col items-center">
         <input
           type="text"
-          value={value ? value[label] : 0}
-          onChange={(event) => handleInputChange(event)}
+          value={value || 0}
+          onChange={(e) => handleInputChange(e)}
           className="w-12 text-center border rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label={label}
         />

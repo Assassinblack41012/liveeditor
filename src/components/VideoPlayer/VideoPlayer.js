@@ -17,38 +17,116 @@ export const VideoPlayer = ({
   source,
   onTimeUpdate,
   onDuration,
-  movedTime,
+  currentTime,
+  duration,
+  createStatus,
+  getFrames,
 }) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
-    if (source.type === "hls" && videoRef.current) {
+    if (source?.type === "hls" && videoRef.current) {
       if (Hls.isSupported()) {
         const hls = new Hls();
-        hls.loadSource(source.url);
+        hls.loadSource(source?.url);
         hls.attachMedia(videoRef.current);
       }
     }
+    videoRef.current.addEventListener("timeupdate", function () {
+      if (!duration) {
+        onDuration(videoRef.current.duration);
+      }
+      onTimeUpdate(videoRef.current.currentTime);
+    });
+    setIsPlaying(false);
   }, [source]);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        let imageArray = [];
+        const startTime = 10; // in seconds
+        const endTime = 20; // in seconds
+        imageArray = await getFramesBetweenTimes(startTime, endTime, 10);
+
+        getFrames(imageArray);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, [createStatus]);
+
+  const getFramesBetweenTimes = async (startTime, endTime, zoom) => {
     if (videoRef.current) {
-      videoRef.current.currentTime = movedTime;
+      const saveTime = videoRef.current.currentTime;
+      let frames = [];
+      let presentMoment = startTime;
+      let canvas = document.createElement("canvas");
+      let context = canvas.getContext("2d");
+      let [w, h] = [videoRef.current.videoWidth, videoRef.current.videoHeight];
+      canvas.width = w;
+      canvas.height = h;
+
+      const waitForVideoToLoad = () => {
+        return new Promise((resolve) => {
+          videoRef.current.onseeked = () => {
+            resolve();
+          };
+          videoRef.current.currentTime = videoRef.current.currentTime; // Trigger the seek event
+        });
+      };
+
+      for (let i = 0; i < zoom; i++) {
+        // Calculate the new current time
+        videoRef.current.currentTime =
+          presentMoment + ((endTime - startTime) / zoom) * i;
+
+        // Wait for the video to be ready after changing currentTime
+        await waitForVideoToLoad();
+
+        // Draw the current frame onto the canvas
+        context.drawImage(videoRef.current, 0, 0, w, h);
+        let base64ImageData = canvas.toDataURL();
+        if (canvas.width && canvas.height) {
+          frames.push({
+            imgData: base64ImageData,
+            width: canvas.width,
+            height: canvas.height,
+          });
+        } else {
+          return;
+        }
+      }
+
+      // Restore the video's current time
+      videoRef.current.currentTime = saveTime;
+      return frames;
     }
-  }, [movedTime]);
+  };
 
   const handlePlayPause = () => {
     if (source?.url) {
       if (videoRef.current) {
-        if (isPlaying) {
-          videoRef.current.pause();
-        } else {
-          videoRef.current.play();
+        var playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          if (isPlaying) {
+            playPromise
+              .then((_) => {
+                videoRef.current.pause();
+              })
+              .catch((error) => {});
+          } else {
+            playPromise
+              .then((_) => {
+                videoRef.current.play();
+              })
+              .catch((error) => {});
+          }
         }
         setIsPlaying(!isPlaying);
       }
@@ -59,24 +137,17 @@ export const VideoPlayer = ({
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-      if (onTimeUpdate) {
-        onTimeUpdate(videoRef.current.currentTime);
-      }
+      onTimeUpdate(videoRef.current.currentTime);
     }
   };
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      if (onDuration) {
-        onDuration(videoRef.current.duration);
-      }
+      onDuration(videoRef.current.duration);
     }
   };
 
   const skipFrames = (frames) => {
-    console.log(videoRef.current.currentTime);
     if (videoRef.current) {
       const frameTime = 1 / 30;
       videoRef.current.currentTime += frameTime * frames;
@@ -134,18 +205,26 @@ export const VideoPlayer = ({
         <div className="flex items-center justify-between text-gray-400 text-sm h-5 px-2">
           <span>
             {formatTimeCode(currentTime)
-              ? `${formatTimeCode(currentTime).hours}:${
-                  formatTimeCode(currentTime).minutes
-                }:${formatTimeCode(currentTime).seconds}:${
-                  formatTimeCode(currentTime).milliseconds
-                }`
+              ? `${formatTimeCode(currentTime)
+                  .hours.toString()
+                  .padStart(2, "0")}:${formatTimeCode(currentTime)
+                  .minutes.toString()
+                  .padStart(2, "0")}:${formatTimeCode(currentTime)
+                  .seconds.toString()
+                  .padStart(2, "0")}:${formatTimeCode(currentTime)
+                  .milliseconds.toString()
+                  .padStart(3, "0")}`
               : " "}
           </span>
-          <span>{`${formatTimeCode(duration).hours}:${
-            formatTimeCode(duration).minutes
-          }:${formatTimeCode(duration).seconds}:${
-            formatTimeCode(duration).milliseconds
-          }`}</span>
+          <span>{`${formatTimeCode(duration)
+            .hours.toString()
+            .padStart(2, "0")}:${formatTimeCode(duration)
+            .minutes.toString()
+            .padStart(2, "0")}:${formatTimeCode(duration)
+            .seconds.toString()
+            .padStart(2, "0")}:${formatTimeCode(duration)
+            .milliseconds.toString()
+            .padStart(3, "0")}`}</span>
         </div>
         <div className="w-full grid grid-cols-12 flex items-center justify-between">
           <div className="col-span-4" />

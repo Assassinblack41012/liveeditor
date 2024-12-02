@@ -1,33 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { TimeInput } from "./TimeInput";
-import { DEFAULT_MIN_TIME, DEFAULT_MAX_TIME } from "./utils";
 import { Clock } from "lucide-react";
-import { formatTimeCode } from "../../utils/time";
+import { formatTimeCode, MStoTimeCode } from "../../utils/time";
+import { timeToSeconds } from "./utils";
 
 export function TimePicker({
   value,
   onChange,
-  minTime = DEFAULT_MIN_TIME,
-  maxTime = DEFAULT_MAX_TIME,
+  minTime = 0,
+  maxTime = 0,
   showSeconds = true,
   showMilliseconds = false,
 }) {
-  const [pickerValue, setPickerValue] = useState({
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    milliseconds: 0,
-  });
-  const max = {
-    hours: Math.floor(maxTime / 3600),
-    minutes: Math.floor(maxTime / 60) % 60,
-    seconds: Math.floor(maxTime % 60),
-    milliseconds: Math.floor((maxTime - Math.floor(maxTime)) * 1000),
-  };
+  const timeObject = formatTimeCode(value);
 
-  useEffect(() => {
-    setPickerValue(formatTimeCode(value));
-  }, [value]);
+  const handleTimeChange = (unit, newValue) => {
+    const updatedTime = {
+      ...timeObject,
+      [unit]: newValue,
+    };
+    onChange(timeToSeconds(updatedTime).toFixed(3));
+  };
 
   return (
     <div className="inline-flex items-center gap-4 p-4 bg-white rounded-lg shadow-md">
@@ -35,22 +28,20 @@ export function TimePicker({
 
       <div className="flex items-center gap-2">
         <TimeInput
-          value={pickerValue}
-          min={minTime.hours}
-          max={max.hours}
-          setPickerValue={() => setPickerValue()}
+          value={timeObject.hours}
+          min={0}
+          max={Math.floor(maxTime / 3600)}
           label="hours"
-          onChange={(value) => onChange(value)}
+          onChange={(newValue) => handleTimeChange("hours", newValue)}
         />
         <div className="mb-[25px] text-xl font-semibold text-gray-400">:</div>
 
         <TimeInput
-          value={pickerValue}
+          value={timeObject.minutes}
           min={0}
           max={59}
-          setPickerValue={() => setPickerValue()}
           label="minutes"
-          onChange={(value) => onChange(value)}
+          onChange={(newValue) => handleTimeChange("minutes", newValue)}
         />
 
         {showSeconds && (
@@ -59,12 +50,11 @@ export function TimePicker({
               :
             </div>
             <TimeInput
-              value={pickerValue}
+              value={timeObject.seconds}
               min={0}
               max={59}
-              setPickerValue={() => setPickerValue()}
               label="seconds"
-              onChange={(value) => onChange(value)}
+              onChange={(newValue) => handleTimeChange("seconds", newValue)}
             />
           </>
         )}
@@ -75,13 +65,13 @@ export function TimePicker({
               .
             </div>
             <TimeInput
-              value={pickerValue}
+              value={timeObject.milliseconds}
               min={0}
               max={999}
-              setPickerValue={() => setPickerValue()}
               label="milliseconds"
-              padLength={3}
-              onChange={(value) => onChange(value)}
+              onChange={(newValue) =>
+                handleTimeChange("milliseconds", newValue)
+              }
             />
           </>
         )}

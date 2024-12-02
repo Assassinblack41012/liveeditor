@@ -29,6 +29,15 @@ function timeToMilliseconds(time) {
   );
 }
 
+function timeToSeconds(time) {
+  return (
+    time.hours * 3600 +
+      time.minutes * 60 +
+      time.seconds +
+      time.milliseconds / 1000 || 0
+  );
+}
+
 function clampTime(time, minTime, maxTime) {
   if (timeToMilliseconds(time) < timeToMilliseconds(minTime)) return minTime;
   if (timeToMilliseconds(time) > timeToMilliseconds(maxTime)) return maxTime;
@@ -39,6 +48,7 @@ function clampTime(time, minTime, maxTime) {
 module.exports = {
   DEFAULT_MIN_TIME,
   DEFAULT_MAX_TIME,
+  timeToSeconds,
   isTimeInRange,
   timeToMilliseconds,
   clampTime,
