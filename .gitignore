@@ -166,3 +166,4 @@ cython_debug/
 *.mp4
 *.m3u*
 node_modules
+package-lock.json

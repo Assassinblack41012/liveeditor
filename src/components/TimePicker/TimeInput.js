@@ -1,15 +1,14 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { timeToSeconds } from "./utils";
 
 export function TimeInput({ value, min, max, label, onChange }) {
   const increment = () => {
-    const newValue = value >= max ? min : parseInt(value + 1);
+    const newValue = value >= max ? min : parseInt(value) + 1;
     onChange(newValue);
   };
 
   const decrement = () => {
-    const newValue = value <= min ? max : parseInt(value - 1);
+    const newValue = value <= min ? max : parseInt(value) - 1;
     onChange(newValue);
   };
 

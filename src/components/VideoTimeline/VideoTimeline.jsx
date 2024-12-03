@@ -1,142 +1,181 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
-import { useTimelineZoom } from "../../hooks/useTimelineZoom";
-import { useTimelineDrag } from "../../hooks/useTimelineDrag";
+import { RefreshCw, Play } from "lucide-react";
 import TimelineFrame from "./TimelineFrame";
 import "./VideoTimeline.css";
 import Hls from "hls.js";
+import { PreviewDialog } from "./PreviewDialog";
 
-const VideoTimeline = ({ startTime, endTime, onFrameSelect, frames }) => {
-  const [currentTime, setCurrentTime] = useState(startTime);
+const VideoTimeline = ({
+  startTime,
+  endTime,
+  source,
+  isPlaying,
+  refreshStatus,
+  setRefreshStatus,
+  savedTime,
+  setIsPlaying,
+}) => {
+  const [frames, setFrames] = useState([]);
+  const [zoom, setZoom] = useState(1);
+  const [present, setPresent] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [fixedInMarker, setIFM] = useState(0);
+  const [fixedOutMarker, setOFM] = useState(0);
   const containerRef = useRef(null);
+  const videoRef = useRef(null);
 
-  // let video = document.createElement("video");
-  // video.src = source?.url;
-  let canvas = document.createElement("canvas");
-  let context = canvas.getContext("2d");
+  useEffect(() => {
+    // Create video element once
+    videoRef.current = document.createElement("video");
+    videoRef.current.src = source?.url;
 
-  // useEffect(() => {
-  //   if (source?.type === "hls" && video) {
-  //     if (Hls.isSupported()) {
-  //       const hls = new Hls();
-  //       hls.loadSource(url);
-  //       hls.attachMedia(video);
-  //     }
-  //   }
-  // }, [source]);
-
-  const { zoom, handleZoom } = useTimelineZoom();
-  const { isDragging, startDrag, onDrag, endDrag } = useTimelineDrag({
-    zoom,
-    startTime,
-    endTime,
-    onTimeChange: setCurrentTime,
-  });
-
-  const totalDuration = endTime - startTime;
-  const visibleDuration = totalDuration / zoom;
-  const framesCount = Math.ceil(10 * zoom);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       let imageArray = [];
-  //       const startTime = 10; // in seconds
-  //       const endTime = 20; // in seconds
-  //       imageArray = await getFramesBetweenTimes(startTime, endTime, 10);
-
-  //       getFrames(imageArray);
-  //     } catch (error) {
-  //       console.error("Error fetching data:", error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, [createStatus]);
-
-  // const getFramesBetweenTimes = async (startTime, endTime, zoom) => {
-  //   if (video) {
-  //     const saveTime = video.currentTime;
-  //     let frames = [];
-  //     let presentMoment = startTime;
-  //     let [w, h] = [video.videoWidth, video.videoHeight];
-  //     canvas.width = w;
-  //     canvas.height = h;
-
-  //     const waitForVideoToLoad = () => {
-  //       return new Promise((resolve) => {
-  //         video.onseeked = () => {
-  //           resolve();
-  //         };
-  //         video.currentTime = video.currentTime; // Trigger the seek event
-  //       });
-  //     };
-
-  //     for (let i = 0; i < zoom; i++) {
-  //       // Calculate the new current time
-  //       video.currentTime = presentMoment + ((endTime - startTime) / zoom) * i;
-
-  //       // Wait for the video to be ready after changing currentTime
-  //       await waitForVideoToLoad();
-
-  //       // Draw the current frame onto the canvas
-  //       context.drawImage(video, 0, 0, w, h);
-  //       let base64ImageData = canvas.toDataURL();
-  //       if (canvas.width && canvas.height) {
-  //         frames.push({
-  //           imgData: base64ImageData,
-  //           width: canvas.width,
-  //           height: canvas.height,
-  //         });
-  //       } else {
-  //         return;
-  //       }
-  //     }
-
-  //     // Restore the video's current time
-  //     video.currentTime = saveTime;
-  //     return frames;
-  //   }
-  // };
-
-  const generateFrames = useCallback(() => {
-    const frames = [];
-    const frameInterval = visibleDuration / 10;
-
-    for (let i = 0; i < framesCount; i++) {
-      const frameTime = currentTime + i * frameInterval;
-      if (frameTime <= endTime) {
-        frames.push(
-          <TimelineFrame
-            key={i}
-            image={frames[i]}
-            time={frameTime}
-            isSelected={false}
-            onClick={() => onFrameSelect(frameTime)}
-          />
-        );
+    // Setup HLS if needed
+    if (source?.type === "hls" && videoRef.current) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(source.url);
+        hls.attachMedia(videoRef.current);
       }
     }
-    return frames;
-  }, [currentTime, visibleDuration, framesCount, endTime, onFrameSelect]);
+    setIsPlaying(false);
+  }, [source]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !source?.url) return;
+
+    if (isPlaying === true) {
+      video.play().catch((error) => console.error("Play error:", error));
+    } else {
+      video.pause();
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      setPresent(savedTime);
+    }
+  }, [savedTime]);
+
+  const handleRefresh = () => {
+    if (
+      startTime === null ||
+      endTime === null ||
+      parseFloat(startTime) >= parseFloat(endTime)
+    ) {
+      alert("Please set valid start and end points.");
+      return;
+    }
+    if (
+      parseFloat(startTime) > videoRef.current.duration ||
+      parseFloat(endTime) > videoRef.current.duration
+    ) {
+      alert("Please set valid start and end points.");
+      return;
+    }
+    setIFM(startTime);
+    setOFM(endTime);
+    setRefreshStatus(true);
+  };
+
+  const handlePlay = () => {
+    if (frames?.length === 0) return;
+    if (
+      startTime === null ||
+      endTime === null ||
+      parseFloat(startTime) >= parseFloat(endTime)
+    ) {
+      alert("Please set valid start and end points.");
+      return;
+    }
+    setDialogOpen(true);
+  };
+
+  useEffect(() => {
+    if (refreshStatus) {
+      const fetchData = async () => {
+        try {
+          let imageArray = [];
+          imageArray = await getFramesBetweenTimes(
+            parseFloat(startTime),
+            parseFloat(endTime),
+            10 * zoom
+          );
+          setFrames(imageArray);
+          setRefreshStatus(false);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      };
+
+      fetchData();
+    }
+  }, [refreshStatus]);
+
+  const getFramesBetweenTimes = async (startTime, endTime, zoom) => {
+    if (videoRef.current) {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      let frames = [];
+      let presentMoment = startTime;
+      let [w, h] = [videoRef.current.videoWidth, videoRef.current.videoHeight];
+      canvas.width = w;
+      canvas.height = h;
+
+      const waitForVideoToLoad = () => {
+        return new Promise((resolve) => {
+          videoRef.current.onseeked = () => {
+            resolve();
+          };
+        });
+      };
+
+      for (let i = 0; i < zoom; i++) {
+        // Calculate the new current time
+        const cT = presentMoment + ((endTime - startTime) / zoom) * i;
+        videoRef.current.currentTime = cT;
+        // Wait for the video to be ready after changing currentTime
+        await waitForVideoToLoad();
+
+        // Draw the current frame onto the canvas
+        context.drawImage(videoRef.current, 0, 0, w, h);
+        let base64ImageData = canvas.toDataURL();
+        if (canvas.width && canvas.height) {
+          frames.push(base64ImageData);
+        } else {
+          return;
+        }
+      }
+      videoRef.current.currentTime = endTime;
+      await waitForVideoToLoad();
+      context.drawImage(videoRef.current, 0, 0, w, h);
+      let base64ImageData = canvas.toDataURL();
+      if (canvas.width && canvas.height) {
+        frames.push(base64ImageData);
+      }
+
+      // Restore the video's current time
+      videoRef.current.currentTime = present;
+      await waitForVideoToLoad();
+      return frames;
+    }
+  };
 
   const gener = () => {
     let arr = [];
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    for (let i = 0; i < frames.length; i++) {
+    for (let i = 0; i < frames?.length; i++) {
+      const frameTime =
+        fixedInMarker + (i * (fixedOutMarker - fixedInMarker)) / zoom / 10;
       const frame = frames[i];
-      canvas.width = frame?.width || 0;
-      canvas.height = frame?.height || 0;
-
       arr.push(
-        <img
-          src={frame.imgData}
-          // width={frame.width}
-          // height={frame.height}
+        <div
+          className=" hover:scale-105 hover:border-2 hover:border-blue-500"
           key={i}
-        ></img>
+        >
+          <TimelineFrame image={frame} time={frameTime} />
+        </div>
       );
     }
     return arr;
@@ -144,21 +183,60 @@ const VideoTimeline = ({ startTime, endTime, onFrameSelect, frames }) => {
 
   return (
     <div
-      className="w-full h-[110px] bg-gray-200 border border-gray-300 rounded overflow-hidden relative"
+      className="w-[1248px] h-[130px] bg-gray-200 border border-gray-300 rounded overflow-hidden relative"
       ref={containerRef}
-      onWheel={handleZoom}
-      onMouseDown={startDrag}
-      onMouseMove={isDragging ? onDrag : null}
-      onMouseUp={endDrag}
-      onMouseLeave={endDrag}
     >
-      <div className="flex gap-[2px] h-[75px] p-2 overflow-x-auto overflow-y-hidden">
-        {frames !== undefined && gener()}
-        {/* {generateFrames()} */}
+      <PreviewDialog
+        source={source}
+        videoStartTime={startTime}
+        videoEndTime={endTime}
+        open={dialogOpen}
+        setOpen={(value) => setDialogOpen(value)}
+      />
+      <div
+        className="flex gap-[2px] h-[95px] p-2 overflow-x-auto overflow-y-hidden justify-between"
+        style={{ scrollbarGutter: "both-edges" }}
+      >
+        {frames?.length ? gener() : <div />}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-2 bg-white bg-opacity-90 border-t border-gray-300 flex justify-between text-xs">
-        <span>Zoom: {zoom.toFixed(1)}x</span>
-        <span>Current Time: {currentTime.toFixed(2)}s</span>
+      <div className="absolute flex bottom-0 left-0 right-0 gap-4 bg-white bg-opacity-90 border-t border-gray-300 flex justify-between text-xs">
+        <div className="flex gap-4">
+          <span className="content-center p-2">Frames count: {zoom * 10}</span>
+          <input
+            type="range"
+            min="1"
+            max="4"
+            step="1"
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            className="w-20 accent-blue-500"
+          />
+        </div>
+        <div className="flex">
+          <button
+            onClick={() => handleRefresh()}
+            className="p-2 transition-colors  hover:bg-gray-400 rounded-full"
+          >
+            <RefreshCw
+              className={
+                refreshStatus
+                  ? "w-6 h-6 animate-spin text-blue-600"
+                  : "w-6 h-6 text-blue-500"
+              }
+            />
+          </button>
+          <button
+            onClick={() => handlePlay()}
+            className="p-2 transition-colors  hover:bg-gray-400 rounded-full"
+            disabled={frames?.length === 0}
+          >
+            <Play
+              className={`w-6 h-6 ${
+                frames?.length === 0 ? "text-gray-400" : "text-blue-600"
+              }`}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );

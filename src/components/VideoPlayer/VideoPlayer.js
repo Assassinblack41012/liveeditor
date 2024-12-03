@@ -19,11 +19,10 @@ export const VideoPlayer = ({
   onDuration,
   currentTime,
   duration,
-  createStatus,
-  getFrames,
+  isPlaying,
+  setIsPlaying,
 }) => {
   const videoRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
 
@@ -43,71 +42,6 @@ export const VideoPlayer = ({
     });
     setIsPlaying(false);
   }, [source]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        let imageArray = [];
-        const startTime = 10; // in seconds
-        const endTime = 20; // in seconds
-        imageArray = await getFramesBetweenTimes(startTime, endTime, 10);
-
-        getFrames(imageArray);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, [createStatus]);
-
-  const getFramesBetweenTimes = async (startTime, endTime, zoom) => {
-    if (videoRef.current) {
-      const saveTime = videoRef.current.currentTime;
-      let frames = [];
-      let presentMoment = startTime;
-      let canvas = document.createElement("canvas");
-      let context = canvas.getContext("2d");
-      let [w, h] = [videoRef.current.videoWidth, videoRef.current.videoHeight];
-      canvas.width = w;
-      canvas.height = h;
-
-      const waitForVideoToLoad = () => {
-        return new Promise((resolve) => {
-          videoRef.current.onseeked = () => {
-            resolve();
-          };
-          videoRef.current.currentTime = videoRef.current.currentTime; // Trigger the seek event
-        });
-      };
-
-      for (let i = 0; i < zoom; i++) {
-        // Calculate the new current time
-        videoRef.current.currentTime =
-          presentMoment + ((endTime - startTime) / zoom) * i;
-
-        // Wait for the video to be ready after changing currentTime
-        await waitForVideoToLoad();
-
-        // Draw the current frame onto the canvas
-        context.drawImage(videoRef.current, 0, 0, w, h);
-        let base64ImageData = canvas.toDataURL();
-        if (canvas.width && canvas.height) {
-          frames.push({
-            imgData: base64ImageData,
-            width: canvas.width,
-            height: canvas.height,
-          });
-        } else {
-          return;
-        }
-      }
-
-      // Restore the video's current time
-      videoRef.current.currentTime = saveTime;
-      return frames;
-    }
-  };
 
   const handlePlayPause = () => {
     if (source?.url) {

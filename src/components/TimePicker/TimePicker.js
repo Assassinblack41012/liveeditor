@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { TimeInput } from "./TimeInput";
 import { Clock } from "lucide-react";
-import { formatTimeCode, MStoTimeCode } from "../../utils/time";
+import { formatTimeCode } from "../../utils/time";
 import { timeToSeconds } from "./utils";
 
 export function TimePicker({
@@ -19,7 +19,7 @@ export function TimePicker({
       ...timeObject,
       [unit]: newValue,
     };
-    onChange(timeToSeconds(updatedTime).toFixed(3));
+    onChange(parseFloat(timeToSeconds(updatedTime)));
   };
 
   return (
