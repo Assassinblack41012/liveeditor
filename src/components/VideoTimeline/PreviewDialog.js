@@ -26,7 +26,6 @@ export const PreviewDialog = ({
         const hls = new Hls();
         hls.loadSource(source?.url);
         hls.attachMedia(previewRef.current);
-        console.log("11111111111111111");
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           previewRef.current.currentTime = videoStartTime;

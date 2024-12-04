@@ -36,6 +36,7 @@ const VideoTimeline = ({
         const hls = new Hls();
         hls.loadSource(source.url);
         hls.attachMedia(videoRef.current);
+        videoRef.current.muted = true;
       }
     }
     setIsPlaying(false);
@@ -89,7 +90,13 @@ const VideoTimeline = ({
       alert("Please set valid start and end points.");
       return;
     }
+    setIsPlaying(false);
     setDialogOpen(true);
+  };
+
+  const handleDialogClose = (value) => {
+    setIsPlaying(true);
+    setDialogOpen(value);
   };
 
   useEffect(() => {
@@ -171,7 +178,7 @@ const VideoTimeline = ({
       const frame = frames[i];
       arr.push(
         <div
-          className=" hover:scale-105 hover:border-2 hover:border-blue-500"
+          //   className=" hover:scale-105 hover:border-2 hover:border-blue-500"
           key={i}
         >
           <TimelineFrame image={frame} time={frameTime} />
@@ -183,7 +190,7 @@ const VideoTimeline = ({
 
   return (
     <div
-      className="w-[1248px] h-[130px] bg-gray-200 border border-gray-300 rounded overflow-hidden relative"
+      className="w-[1248px] h-[140px] bg-gray-200 border border-gray-300 rounded overflow-hidden relative"
       ref={containerRef}
     >
       <PreviewDialog
@@ -191,10 +198,10 @@ const VideoTimeline = ({
         videoStartTime={startTime}
         videoEndTime={endTime}
         open={dialogOpen}
-        setOpen={(value) => setDialogOpen(value)}
+        setOpen={(value) => handleDialogClose(value)}
       />
       <div
-        className="flex gap-[2px] h-[95px] p-2 overflow-x-auto overflow-y-hidden justify-between"
+        className="flex gap-[2px] h-[95px] p-2 overflow-x-scroll overflow-y-hidden justify-between"
         style={{ scrollbarGutter: "both-edges" }}
       >
         {frames?.length ? gener() : <div />}

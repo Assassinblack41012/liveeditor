@@ -69,6 +69,18 @@ export const VideoPlayer = ({
     }
   };
 
+  useEffect(() => {
+    if (!source?.url || !videoRef.current) return;
+
+    if (isPlaying) {
+      videoRef.current.play().catch((error) => {
+        console.error("Play failed:", error);
+      });
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isPlaying, source?.url]);
+
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       onTimeUpdate(videoRef.current.currentTime);
