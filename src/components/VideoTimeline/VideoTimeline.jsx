@@ -194,8 +194,8 @@ const VideoTimeline = ({
     >
       <PreviewDialog
         source={source}
-        videoStartTime={startTime}
-        videoEndTime={endTime}
+        videoStartTime={fixedInMarker}
+        videoEndTime={fixedOutMarker}
         open={dialogOpen}
         setOpen={(value) => handleDialogClose(value)}
       />
