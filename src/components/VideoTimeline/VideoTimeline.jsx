@@ -20,6 +20,7 @@ const VideoTimeline = ({
   const [zoom, setZoom] = useState(1);
   const [present, setPresent] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [rate, setRate] = useState(1);
   const [fixedInMarker, setIFM] = useState(0);
   const [fixedOutMarker, setOFM] = useState(0);
   const containerRef = useRef(null);
@@ -77,6 +78,7 @@ const VideoTimeline = ({
     }
     setIFM(startTime);
     setOFM(endTime);
+    setRate(zoom);
     setRefreshStatus(true);
   };
 
@@ -174,13 +176,10 @@ const VideoTimeline = ({
     let arr = [];
     for (let i = 0; i < frames?.length; i++) {
       const frameTime =
-        fixedInMarker + (i * (fixedOutMarker - fixedInMarker)) / zoom / 10;
+        fixedInMarker + (i * (fixedOutMarker - fixedInMarker)) / (rate * 10);
       const frame = frames[i];
       arr.push(
-        <div
-          //   className=" hover:scale-105 hover:border-2 hover:border-blue-500"
-          key={i}
-        >
+        <div key={i}>
           <TimelineFrame image={frame} time={frameTime} />
         </div>
       );

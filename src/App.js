@@ -26,10 +26,6 @@ function App() {
     setStreamSource({ url, type: "hls" });
   };
 
-  const handleFrameSelect = (time) => {
-    console.log("Selected frame at time:", time);
-  };
-
   const handleClipCreate = () => {
     if (
       inMarker === null ||
@@ -153,7 +149,6 @@ function App() {
               source={streamSource}
               startTime={inMarker}
               endTime={outMarker} // 60 seconds video duration
-              onFrameSelect={() => handleFrameSelect()}
               refreshStatus={refreshStatus}
               setRefreshStatus={(value) => setRefreshStatus(value)}
               savedTime={currentTime}
