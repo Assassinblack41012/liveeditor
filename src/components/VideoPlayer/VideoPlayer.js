@@ -21,6 +21,7 @@ export const VideoPlayer = ({
   duration,
   isPlaying,
   setIsPlaying,
+  movedTime,
 }) => {
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -34,14 +35,20 @@ export const VideoPlayer = ({
         hls.attachMedia(videoRef.current);
       }
     }
-    videoRef.current.addEventListener("timeupdate", function () {
+    videoRef.current?.addEventListener("timeupdate", function () {
       if (!duration) {
         onDuration(videoRef.current.duration);
       }
       onTimeUpdate(videoRef.current.currentTime);
     });
-    setIsPlaying(false);
   }, [source]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = movedTime;
+      setIsPlaying(false);
+    }
+  }, [movedTime]);
 
   const handlePlayPause = () => {
     if (source?.url) {
@@ -190,7 +197,7 @@ export const VideoPlayer = ({
               <StepBack className="w-6 h-6 text-white" />
             </button>
             <button
-              onClick={handlePlayPause}
+              onClick={() => handlePlayPause()}
               className="p-2 bg-blue-500 hover:bg-blue-600 rounded-full"
               title="Play/Pause (Space)"
             >

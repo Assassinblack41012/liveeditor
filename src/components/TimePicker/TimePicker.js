@@ -4,14 +4,7 @@ import { Clock } from "lucide-react";
 import { formatTimeCode } from "../../utils/time";
 import { timeToSeconds } from "./utils";
 
-export function TimePicker({
-  value,
-  onChange,
-  minTime = 0,
-  maxTime = 0,
-  showSeconds = true,
-  showMilliseconds = false,
-}) {
+export function TimePicker({ value, onChange, minTime = 0, maxTime = 0 }) {
   const timeObject = formatTimeCode(value);
 
   const handleTimeChange = (unit, newValue) => {
@@ -44,37 +37,27 @@ export function TimePicker({
           onChange={(newValue) => handleTimeChange("minutes", newValue)}
         />
 
-        {showSeconds && (
-          <>
-            <div className="mb-[25px] text-xl font-semibold text-gray-400">
-              :
-            </div>
-            <TimeInput
-              value={timeObject.seconds}
-              min={0}
-              max={59}
-              label="seconds"
-              onChange={(newValue) => handleTimeChange("seconds", newValue)}
-            />
-          </>
-        )}
+        <>
+          <div className="mb-[25px] text-xl font-semibold text-gray-400">:</div>
+          <TimeInput
+            value={timeObject.seconds}
+            min={0}
+            max={59}
+            label="seconds"
+            onChange={(newValue) => handleTimeChange("seconds", newValue)}
+          />
+        </>
 
-        {showMilliseconds && (
-          <>
-            <div className="mb-[20px] text-xl font-semibold text-gray-400">
-              .
-            </div>
-            <TimeInput
-              value={timeObject.milliseconds}
-              min={0}
-              max={999}
-              label="milliseconds"
-              onChange={(newValue) =>
-                handleTimeChange("milliseconds", newValue)
-              }
-            />
-          </>
-        )}
+        <>
+          <div className="mb-[20px] text-xl font-semibold text-gray-400">.</div>
+          <TimeInput
+            value={timeObject.milliseconds}
+            min={0}
+            max={999}
+            label="milliseconds"
+            onChange={(newValue) => handleTimeChange("milliseconds", newValue)}
+          />
+        </>
       </div>
     </div>
   );

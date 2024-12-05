@@ -13,6 +13,7 @@ function App() {
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState(false);
+  const [movedTime, setMovedTime] = useState(0);
 
   const [streamSource, setStreamSource] = useState({
     url: "",
@@ -94,6 +95,7 @@ function App() {
               onDuration={(value) => setDuration(value)}
               isPlaying={isPlaying}
               setIsPlaying={(value) => setIsPlaying(value)}
+              movedTime={movedTime}
             />
           </div>
 
@@ -107,11 +109,12 @@ function App() {
 
             <TimePicker
               value={inMarker}
-              onChange={(value) => setInMarker(value)}
+              onChange={(value) => {
+                setInMarker(value);
+                setMovedTime(value);
+              }}
               minTime={0}
               maxTime={currentTime ? parseFloat(currentTime?.toFixed(3)) : 0}
-              showSeconds={true}
-              showMilliseconds={true}
             />
 
             <button
@@ -126,12 +129,11 @@ function App() {
             <TimePicker
               value={outMarker}
               onChange={(value) => {
-                setOutMarker(parseFloat(value));
+                setOutMarker(value);
+                setMovedTime(value);
               }}
               minTime={0}
               maxTime={currentTime ? parseFloat(duration?.toFixed(3)) : 0}
-              showSeconds={true}
-              showMilliseconds={true}
             />
 
             <button

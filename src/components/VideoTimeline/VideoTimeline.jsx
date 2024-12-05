@@ -18,7 +18,6 @@ const VideoTimeline = ({
 }) => {
   const [frames, setFrames] = useState([]);
   const [zoom, setZoom] = useState(1);
-  const [present, setPresent] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [rate, setRate] = useState(1);
   const [fixedInMarker, setIFM] = useState(0);
@@ -40,7 +39,6 @@ const VideoTimeline = ({
         videoRef.current.muted = true;
       }
     }
-    setIsPlaying(false);
   }, [source]);
 
   useEffect(() => {
@@ -53,12 +51,6 @@ const VideoTimeline = ({
       video.pause();
     }
   }, [isPlaying]);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      setPresent(savedTime);
-    }
-  }, [savedTime]);
 
   const handleRefresh = () => {
     if (
@@ -83,22 +75,24 @@ const VideoTimeline = ({
   };
 
   const handlePlay = () => {
-    if (frames?.length === 0) return;
-    if (
-      startTime === null ||
-      endTime === null ||
-      parseFloat(startTime) >= parseFloat(endTime)
-    ) {
-      alert("Please set valid start and end points.");
-      return;
-    }
+    // if (frames?.length === 0) return;
+    // if (
+    //   startTime === null ||
+    //   endTime === null ||
+    //   parseFloat(startTime) >= parseFloat(endTime)
+    // ) {
+    //   alert("Please set valid start and end points.");
+    //   return;
+    // }
+    setIFM(startTime);
+    setOFM(endTime);
     setIsPlaying(false);
     setDialogOpen(true);
   };
 
-  const handleDialogClose = (value) => {
-    setIsPlaying(true);
-    setDialogOpen(value);
+  const handleDialogClose = () => {
+    setIsPlaying(false);
+    setDialogOpen(false);
   };
 
   useEffect(() => {
@@ -166,7 +160,7 @@ const VideoTimeline = ({
       }
 
       // Restore the video's current time
-      videoRef.current.currentTime = present;
+      videoRef.current.currentTime = savedTime;
       await waitForVideoToLoad();
       return frames;
     }
@@ -197,7 +191,7 @@ const VideoTimeline = ({
         videoStartTime={fixedInMarker}
         videoEndTime={fixedOutMarker}
         open={dialogOpen}
-        setOpen={(value) => handleDialogClose(value)}
+        setOpen={() => handleDialogClose()}
       />
       <div
         className="flex gap-[2px] h-[95px] p-2 overflow-x-scroll overflow-y-hidden justify-between"
@@ -234,7 +228,7 @@ const VideoTimeline = ({
           <button
             onClick={() => handlePlay()}
             className="p-2 transition-colors  hover:bg-gray-400 rounded-full"
-            disabled={frames?.length === 0}
+            // disabled={frames?.length === 0}
           >
             <Play
               className={`w-6 h-6 ${
@@ -251,7 +245,6 @@ const VideoTimeline = ({
 VideoTimeline.propTypes = {
   startTime: PropTypes.number.isRequired,
   endTime: PropTypes.number.isRequired,
-  onFrameSelect: PropTypes.func.isRequired,
 };
 
 export default VideoTimeline;

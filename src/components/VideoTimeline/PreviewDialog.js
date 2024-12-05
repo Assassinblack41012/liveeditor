@@ -43,7 +43,7 @@ export const PreviewDialog = ({
     }
 
     const handleTimeUpdate = () => {
-      if (previewRef.current.currentTime >= videoEndTime) {
+      if (previewRef.current?.currentTime >= videoEndTime) {
         previewRef.current.pause();
       }
     };
@@ -58,15 +58,12 @@ export const PreviewDialog = ({
     };
   }, [source, open, previewRef.current]);
 
-  const handleClose = () => {
-    setOpen(false);
-  };
   return (
     <Dialog
       open={open}
       as="div"
       className="w-[1000px] h-[760px] relative z-10 focus:outline-none"
-      onClose={handleClose}
+      onClose={() => setOpen(false)}
     >
       <DialogBackdrop className="fixed inset-0 bg-black/70" />
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -78,7 +75,13 @@ export const PreviewDialog = ({
             <DialogTitle as="h3" className="text-base/7 font-medium text-white">
               Clip Preview
             </DialogTitle>
-            <video ref={previewRef} className="w-full aspect-video" controls />
+            {open && (
+              <video
+                ref={previewRef}
+                className="w-full aspect-video"
+                controls
+              />
+            )}
           </DialogPanel>
         </div>
       </div>
