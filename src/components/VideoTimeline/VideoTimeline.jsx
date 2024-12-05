@@ -18,12 +18,17 @@ const VideoTimeline = ({
 }) => {
   const [frames, setFrames] = useState([]);
   const [zoom, setZoom] = useState(1);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(true);
   const [rate, setRate] = useState(1);
   const [fixedInMarker, setIFM] = useState(0);
   const [fixedOutMarker, setOFM] = useState(0);
   const containerRef = useRef(null);
   const videoRef = useRef(null);
+
+  // render PreviewDialog component because of having to set previewRef value to video tag in PreviewDialog component
+  useEffect(() => {
+    setDialogOpen(false);
+  }, []);
 
   useEffect(() => {
     // Create video element once
@@ -61,13 +66,6 @@ const VideoTimeline = ({
       alert("Please set valid start and end points.");
       return;
     }
-    if (
-      parseFloat(startTime) > videoRef.current.duration ||
-      parseFloat(endTime) > videoRef.current.duration
-    ) {
-      alert("Please set valid start and end points.");
-      return;
-    }
     setIFM(startTime);
     setOFM(endTime);
     setRate(zoom);
@@ -75,15 +73,15 @@ const VideoTimeline = ({
   };
 
   const handlePlay = () => {
-    // if (frames?.length === 0) return;
-    // if (
-    //   startTime === null ||
-    //   endTime === null ||
-    //   parseFloat(startTime) >= parseFloat(endTime)
-    // ) {
-    //   alert("Please set valid start and end points.");
-    //   return;
-    // }
+    if (frames?.length === 0) return;
+    if (
+      startTime === null ||
+      endTime === null ||
+      parseFloat(startTime) >= parseFloat(endTime)
+    ) {
+      alert("Please set valid start and end points.");
+      return;
+    }
     setIFM(startTime);
     setOFM(endTime);
     setIsPlaying(false);
@@ -186,13 +184,15 @@ const VideoTimeline = ({
       className="w-[1248px] h-[140px] bg-gray-200 border border-gray-300 rounded overflow-hidden relative"
       ref={containerRef}
     >
-      <PreviewDialog
-        source={source}
-        videoStartTime={fixedInMarker}
-        videoEndTime={fixedOutMarker}
-        open={dialogOpen}
-        setOpen={() => handleDialogClose()}
-      />
+      {dialogOpen ? (
+        <PreviewDialog
+          source={source}
+          videoStartTime={fixedInMarker}
+          videoEndTime={fixedOutMarker}
+          open={dialogOpen}
+          setOpen={() => handleDialogClose()}
+        />
+      ) : null}
       <div
         className="flex gap-[2px] h-[95px] p-2 overflow-x-scroll overflow-y-hidden justify-between"
         style={{ scrollbarGutter: "both-edges" }}
@@ -228,7 +228,7 @@ const VideoTimeline = ({
           <button
             onClick={() => handlePlay()}
             className="p-2 transition-colors  hover:bg-gray-400 rounded-full"
-            // disabled={frames?.length === 0}
+            disabled={frames?.length === 0}
           >
             <Play
               className={`w-6 h-6 ${

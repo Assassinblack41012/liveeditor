@@ -110,6 +110,12 @@ function App() {
             <TimePicker
               value={inMarker}
               onChange={(value) => {
+                if (parseFloat(value) > duration) {
+                  alert("Please set valid start and end points.");
+                  setInMarker(duration);
+                  setMovedTime(duration);
+                  return;
+                }
                 setInMarker(value);
                 setMovedTime(value);
               }}
@@ -129,6 +135,12 @@ function App() {
             <TimePicker
               value={outMarker}
               onChange={(value) => {
+                if (parseFloat(value) > duration) {
+                  alert("Please set valid start and end points.");
+                  setOutMarker(duration);
+                  setMovedTime(duration);
+                  return;
+                }
                 setOutMarker(value);
                 setMovedTime(value);
               }}
