@@ -73,7 +73,7 @@ const VideoTimeline = ({
   };
 
   const handlePlay = () => {
-    if (frames?.length === 0) return;
+    // if (frames?.length === 0) return;
     if (
       startTime === null ||
       endTime === null ||
